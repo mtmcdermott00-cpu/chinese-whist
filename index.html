@@ -1,0 +1,978 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chinese Whist</title>
+<meta name="description" content="Family scorekeeper for Chinese Whist.">
+<meta name="theme-color" content="#0B0A09">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Whist">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..700&family=Jost:wght@300;400;500;600&display=swap">
+<style>
+/* Layout: one-screen phone app in a gilt frame. Masthead on top, the score ledger fills the middle, one gold action at the foot; entry happens in a bottom sheet. */
+:root {
+  --ink: #0B0A09;
+  --panel: #13110E;
+  --gold: #C9A45C;
+  --gold-hi: #E2C27E;
+  --ivory: #F3EBDD;
+  --soft: #CFC6B6;
+  --muted: #A39A8B;
+  --dim: #6E665A;
+  --rose: #E07A86;
+  --miss: #B9727B;
+  --line: rgba(201,164,92,0.28);
+  --line-strong: rgba(201,164,92,0.5);
+  --hair: rgba(243,235,221,0.07);
+  --veil: rgba(0,0,0,0.72);
+  --wash: rgba(201,164,92,0.09);
+  --display: 'Bodoni Moda', 'Bodoni 72', Didot, Georgia, serif;
+  --sans: 'Jost', 'Futura', 'Avenir Next', system-ui, sans-serif;
+  color-scheme: dark;
+}
+html { box-sizing: border-box; height: 100%; background: var(--ink); overflow: hidden; -webkit-text-size-adjust: 100%; }
+*, *::before, *::after { box-sizing: inherit; }
+body {
+  height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--ink); color: var(--ivory); font-family: var(--sans); font-size: 15px; -webkit-font-smoothing: antialiased;
+}
+button, label { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+.backup { display: flex; flex-direction: column; gap: 12px; padding-top: 4px; }
+.filebtn { display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.filebtn input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+input { font: inherit; }
+:focus-visible { outline: 1px solid var(--gold-hi); outline-offset: 3px; }
+
+#app {
+  height: 100%;
+  max-width: 460px;
+  margin: 0 auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0;
+}
+.frame { position: absolute; top: 8px; bottom: 8px; left: 6px; right: 6px; border: 1px solid rgba(201,164,92,0.2); pointer-events: none; }
+.screen { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; padding-inline: 10px; }
+.scroll { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+.kicker { font-size: 10px; font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase; color: var(--gold); }
+.muted { color: var(--muted); }
+.display { font-family: var(--display); font-style: italic; font-weight: 500; }
+.num { font-variant-numeric: lining-nums tabular-nums; }
+.red { color: var(--rose); }
+
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 20px; min-height: 64px; }
+.icons { display: flex; gap: 6px; }
+.iconbtn { width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(201,164,92,0.4); background: transparent; color: var(--gold); display: grid; place-items: center; padding: 0; }
+.iconbtn:disabled { opacity: 0.35; }
+.iconbtn svg { width: 18px; height: 18px; }
+.textbtn { height: 44px; padding: 0 4px; border: 0; background: transparent; color: var(--gold); font-size: 11px; font-weight: 600; letter-spacing: 0.26em; text-transform: uppercase; }
+
+.btn { width: 100%; height: 56px; border-radius: 2px; border: 1px solid var(--gold); background: var(--gold); color: var(--ink); font-size: 13px; font-weight: 600; letter-spacing: 0.3em; text-transform: uppercase; }
+.btn.ghost { background: transparent; color: var(--gold); border-color: rgba(201,164,92,0.4); }
+.btn:disabled { background: transparent; color: var(--dim); border-color: rgba(201,164,92,0.25); }
+.foot { padding: 14px 0 26px; display: flex; flex-direction: column; gap: 10px; }
+.hint { font-size: 12px; font-weight: 300; letter-spacing: 0.04em; color: var(--muted); text-align: center; text-wrap: balance; }
+
+/* ----- Setup ----- */
+.mast { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; padding-top: 4px; }
+.mast .over { font-size: 11px; font-weight: 500; letter-spacing: 0.42em; padding-left: 0.42em; text-transform: uppercase; color: var(--gold); }
+.mast .title { font-size: 64px; line-height: 0.95; letter-spacing: -0.01em; }
+.ornament { display: flex; align-items: center; gap: 10px; width: 180px; margin-top: 10px; color: var(--gold); font-size: 9px; }
+.ornament::before, .ornament::after { content: ""; flex: 1; height: 1px; background: var(--line-strong); }
+.mast .sub { font-size: 14px; font-weight: 300; color: var(--muted); margin-top: 6px; }
+.setup-body { display: flex; flex-direction: column; gap: 26px; padding: 22px 0 8px; }
+.seats { display: flex; flex-direction: column; }
+.seat { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--hair); }
+.seat .idx { width: 22px; font-family: var(--display); font-style: italic; font-size: 18px; color: var(--gold); }
+.seat input { flex: 1; min-width: 0; height: 44px; border: 0; border-bottom: 1px solid transparent; background: transparent; color: var(--ivory); padding: 0 2px; font-size: 18px; }
+.seat input::placeholder { color: var(--dim); }
+.seat input:focus { outline: none; border-bottom-color: var(--gold); }
+.pill { height: 32px; padding: 0 12px; border-radius: 2px; border: 1px solid rgba(201,164,92,0.3); background: transparent; color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; white-space: nowrap; }
+.pill[aria-pressed="true"] { background: var(--gold); border-color: var(--gold); color: var(--ink); }
+.xbtn { width: 44px; height: 44px; border: 0; background: transparent; color: var(--muted); display: grid; place-items: center; padding: 0; }
+.xbtn svg { width: 14px; height: 14px; }
+.add { margin-top: 10px; height: 48px; border: 0; background: transparent; color: var(--gold); font-size: 12px; font-weight: 500; letter-spacing: 0.28em; text-transform: uppercase; }
+.section-label { text-align: center; }
+.hands { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-top: 1px solid var(--line); border-left: 1px solid var(--line); margin-top: 10px; }
+.hands div { height: 52px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: center; gap: 3px; }
+.hands b { font-family: var(--display); font-weight: 500; font-size: 22px; }
+.hands span { font-size: 18px; }
+.hands span.nt { font-size: 12px; letter-spacing: 0.04em; }
+.rules { display: flex; flex-direction: column; gap: 4px; }
+.rules-title { font-family: var(--display); font-style: italic; font-size: 22px; text-align: center; margin-bottom: 6px; }
+.rule { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--hair); }
+.rule .label { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rule .label span:first-child { font-size: 16px; }
+.rule .label span:last-child { font-size: 12px; font-weight: 300; color: var(--muted); }
+.rule-note { font-size: 13px; font-weight: 300; color: var(--soft); text-align: center; line-height: 1.55; padding-top: 10px; text-wrap: balance; }
+
+.stepper { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.stepper button { width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(201,164,92,0.35); background: transparent; color: var(--gold); font-size: 20px; font-weight: 300; padding: 0; }
+.stepper output { min-width: 44px; text-align: center; font-family: var(--display); font-weight: 500; font-size: 28px; line-height: 1; font-variant-numeric: lining-nums tabular-nums; }
+
+/* ----- Game ----- */
+.head-title { display: flex; align-items: baseline; gap: 10px; }
+.head-title .display { font-size: 38px; line-height: 1; }
+.head-title .glyph { font-size: 26px; }
+.head-title .glyph.nt { font-size: 16px; letter-spacing: 0.06em; color: var(--ivory); font-weight: 500; }
+.banner { margin-top: 16px; padding: 16px; border: 1px solid var(--gold); display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.banner .display { font-size: 28px; line-height: 1.1; text-wrap: balance; }
+.banner .ranks { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; font-size: 12px; color: var(--soft); letter-spacing: 0.04em; }
+.ledger { flex: 1; min-height: 0; display: flex; flex-direction: column; margin-top: 16px; border-top: 1px solid var(--line-strong); }
+.grid { display: grid; grid-template-columns: 46px repeat(var(--n), minmax(0, 1fr)); align-items: center; }
+.ledger-head { align-items: end; padding: 14px 0 12px; border-bottom: 1px solid var(--line-strong); }
+.ledger-head .corner { font-size: 9px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); line-height: 1.4; }
+.pcol { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.pcol .pname { font-size: 10px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--soft); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pcol .ptotal { font-family: var(--display); font-weight: 500; font-size: 30px; line-height: 1; }
+.pcol .ptotal.lead { color: var(--gold-hi); }
+.pcol .tag { height: 12px; font-size: 9px; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; color: var(--gold); }
+.lrow { min-height: 44px; border-bottom: 1px solid var(--hair); }
+.lrow.current { background: var(--wash); }
+.lrow .rl { display: flex; align-items: baseline; gap: 3px; padding-left: 4px; color: var(--dim); }
+.lrow.done .rl, .lrow.current .rl { color: var(--ivory); }
+.lrow .rl b { font-family: var(--display); font-weight: 500; font-size: 18px; font-variant-numeric: lining-nums; }
+.lrow .rl span { font-size: 15px; }
+.lrow .rl span.nt { font-size: 10px; letter-spacing: 0.04em; }
+.lrow .rl span.red { color: var(--rose); }
+.lrow:not(.done):not(.current) .rl span { color: var(--dim); }
+.cell { display: flex; flex-direction: column; align-items: center; }
+.cell .m { font-size: 16px; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+.cell .m.bid { font-size: 12px; color: var(--gold); letter-spacing: 0.08em; }
+.cell .s { font-size: 10px; font-weight: 500; letter-spacing: 0.08em; font-variant-numeric: tabular-nums; }
+.cell .s.hit { color: var(--gold-hi); }
+.cell .s.miss { color: var(--miss); }
+
+/* ----- Sheet ----- */
+.veil { position: fixed; inset: 0; background: var(--veil); z-index: 20; }
+.sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 21;
+  max-width: 460px; margin: 0 auto; max-height: 88%; overflow-y: auto;
+  background: var(--panel); border-top: 1px solid var(--gold);
+  padding-top: 14px;
+  padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(24px, env(safe-area-inset-left, 0px));
+  padding-right: max(24px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 16px;
+}
+.sheet.enter { animation: rise 220ms ease-out; }
+@keyframes rise { from { transform: translateY(24px); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .sheet.enter { animation: none; } }
+.grab { width: 36px; height: 1px; background: var(--gold); align-self: center; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sheet-head .display { font-size: 30px; line-height: 1; }
+.sheet-head .kicker { margin-top: 6px; }
+.entries { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.entry { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(201,164,92,0.18); }
+.entry .who { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.entry .who span:first-child { font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.note { font-size: 10px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+.note.gold { color: var(--gold); }
+.note.hit { color: var(--gold-hi); }
+.note.warn { color: var(--rose); }
+.check { font-size: 13px; line-height: 1.45; text-align: center; color: var(--muted); text-wrap: balance; }
+.check.warn { color: var(--rose); }
+.confirm-copy { font-size: 15px; font-weight: 300; color: var(--soft); line-height: 1.5; }
+.row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.row2 .btn { font-size: 11px; letter-spacing: 0.22em; }
+
+/* ----- Ledger / history ----- */
+.hist-body { display: flex; flex-direction: column; gap: 28px; padding: 18px 0 8px; }
+.board { border-top: 1px solid var(--line-strong); }
+.board .grid { grid-template-columns: minmax(0, 1fr) repeat(4, 50px); }
+.board .bh { padding: 12px 0 10px; border-bottom: 1px solid var(--line-strong); font-size: 9px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
+.board .br { min-height: 48px; border-bottom: 1px solid var(--hair); }
+.board .br .nm { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.board .br .nm b { font-family: var(--display); font-style: italic; font-weight: 500; font-size: 16px; color: var(--gold); width: 18px; }
+.board .br .nm span { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board .r { text-align: right; font-variant-numeric: tabular-nums; }
+.board .br .r { font-size: 15px; }
+.board .br .r.wins { font-family: var(--display); font-size: 22px; font-weight: 500; color: var(--gold-hi); }
+.games { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.gm { padding: 14px 0; border-bottom: 1px solid var(--hair); display: flex; flex-direction: column; gap: 6px; }
+.gm-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.gm .display { font-size: 21px; }
+.gm .scores { font-size: 13px; color: var(--soft); letter-spacing: 0.02em; line-height: 1.5; }
+.gm .scores b { font-weight: 500; color: var(--ivory); }
+.gm-actions { display: flex; gap: 8px; align-items: center; }
+.mini { height: 36px; padding: 0 12px; border-radius: 2px; border: 1px solid rgba(201,164,92,0.3); background: transparent; color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; }
+.mini.danger { border-color: var(--rose); color: var(--rose); }
+.empty { padding: 28px 8px; text-align: center; color: var(--muted); font-weight: 300; line-height: 1.55; text-wrap: balance; }
+.status { font-size: 11px; font-weight: 300; letter-spacing: 0.06em; color: var(--dim); text-align: center; }
+
+/* ----- Switch ----- */
+.switch { width: 52px; height: 32px; border-radius: 16px; border: 1px solid rgba(201,164,92,0.4); background: transparent; position: relative; padding: 0; flex-shrink: 0; }
+.switch::after { content: ""; position: absolute; top: 4px; left: 4px; width: 22px; height: 22px; border-radius: 50%; background: var(--dim); transition: transform 160ms ease, background 160ms ease; }
+.switch[aria-checked="true"] { border-color: var(--gold); }
+.switch[aria-checked="true"]::after { transform: translateX(20px); background: var(--gold); }
+@media (prefers-reduced-motion: reduce) { .switch::after { transition: none; } }
+
+/* ----- Card ranks ----- */
+.kick-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ranks-pill { height: 26px; padding: 0 10px; border-radius: 13px; border: 1px solid rgba(201,164,92,0.4); background: transparent; color: var(--gold); font-size: 9px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; }
+.ref-body { display: flex; flex-direction: column; gap: 24px; padding: 18px 0 12px; }
+.suit-pick { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+.suit-pick button { height: 56px; border: 0; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); background: transparent; color: var(--ivory); font-size: 24px; padding: 0; }
+.suit-pick button .nt { font-size: 13px; letter-spacing: 0.06em; font-weight: 500; }
+.suit-pick button[aria-pressed="true"] { background: var(--gold); color: var(--ink); }
+.suit-pick button[aria-pressed="true"] .red { color: #8E1F2E; }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--hair); }
+.toggle-row .label { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.toggle-row .label span:first-child { font-size: 16px; }
+.toggle-row .label span:last-child { font-size: 12px; font-weight: 300; color: var(--muted); }
+.rank-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.rank-title .display { font-size: 24px; }
+.cards { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px 6px; }
+.card { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.face { width: 100%; max-width: 44px; aspect-ratio: 5 / 7; border-radius: 4px; background: var(--ivory); color: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; position: relative; }
+.face b { font-family: var(--display); font-weight: 600; font-size: 17px; line-height: 1; }
+.face span { font-size: 14px; line-height: 1.1; }
+.face .red { color: #A3243A; }
+.face.bower { box-shadow: 0 0 0 1px var(--gold), 0 0 0 3px var(--ink), 0 0 0 4px var(--gold); }
+.card .pos { font-size: 9px; font-weight: 600; letter-spacing: 0.12em; color: var(--muted); font-variant-numeric: tabular-nums; }
+.card .pos.gold { color: var(--gold); }
+.order { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.order-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--hair); }
+.order-row .sg { width: 28px; font-size: 22px; text-align: center; flex-shrink: 0; }
+.order-row .seq { font-family: var(--display); font-size: 17px; letter-spacing: 0.04em; color: var(--soft); min-width: 0; overflow-wrap: anywhere; }
+.order-row .seq i { font-style: normal; color: var(--dim); padding: 0 2px; }
+.legend { font-size: 13px; font-weight: 300; color: var(--soft); line-height: 1.55; text-wrap: pretty; }
+.legend b { font-weight: 500; color: var(--gold); }
+</style>
+</head>
+<body>
+<div id="app" aria-live="polite"></div>
+<div id="sheet-root"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var CYCLE = ['H', 'D', 'C', 'S', 'NT'];
+  var ROUNDS = [];
+  for (var c = 10, k = 0; c >= 1; c--, k++) ROUNDS.push({ cards: c, trump: CYCLE[k % 5] });
+  var SUIT = {
+    H: { g: '♥︎', name: 'Hearts', red: true },
+    D: { g: '♦︎', name: 'Diamonds', red: true },
+    C: { g: '♣︎', name: 'Clubs', red: false },
+    S: { g: '♠︎', name: 'Spades', red: false },
+    NT: { g: 'NT', name: 'No trumps', red: false }
+  };
+  var LS_STATE = 'cw.state.v1';
+  var LS_PAST = 'cw.past.v1';
+  var MAX_SEATS = 5;
+
+  var app = document.getElementById('app');
+  var sheetRoot = document.getElementById('sheet-root');
+
+  var ICON = {
+    undo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>',
+    close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6 6 18"/></svg>',
+    ledger: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M9 9h6"/><path d="M9 13h6"/><path d="M9 17h3"/></svg>',
+    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>'
+  };
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (ch) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+    });
+  }
+  function zeros(n) { var a = []; for (var i = 0; i < n; i++) a.push(0); return a; }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function int(v, d) { var n = parseInt(v, 10); return isFinite(n) ? n : d; }
+  function sum(a) { var t = 0; for (var i = 0; i < a.length; i++) t += a[i]; return t; }
+  function lsGet(key) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+  function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+
+  function blankGame(players, firstDealer) {
+    return { players: players, firstDealer: firstDealer || 0, phase: 'setup', round: 0, bids: zeros(players.length), tricks: zeros(players.length), history: [], startedAt: null, savedId: null };
+  }
+
+  var S = {
+    view: 'setup',
+    game: blankGame(['', '', '', ''], 0),
+    rules: { perTrick: 1, bonus: 10, bowers: false },
+    sheet: null,
+    refTrump: null,
+    past: [],
+    updatedAt: 0,
+    removing: null,
+    store: 'local'
+  };
+  var lastSheet = null;
+  var db = null;
+  var saveTimer = null;
+
+  function normaliseGame(g) {
+    if (!g || !Array.isArray(g.players) || g.players.length < 2) return null;
+    var n = Math.min(g.players.length, MAX_SEATS);
+    var players = g.players.slice(0, n).map(function (p) { return typeof p === 'string' ? p : ''; });
+    var fix = function (a) { a = Array.isArray(a) ? a.slice(0, n) : []; while (a.length < n) a.push(0); return a.map(function (x) { return int(x, 0); }); };
+    return {
+      players: players,
+      firstDealer: Math.min(Math.max(int(g.firstDealer, 0), 0), n - 1),
+      phase: ['setup', 'bid', 'tricks', 'over'].indexOf(g.phase) >= 0 ? g.phase : 'setup',
+      round: Math.min(Math.max(int(g.round, 0), 0), ROUNDS.length),
+      bids: fix(g.bids),
+      tricks: fix(g.tricks),
+      history: Array.isArray(g.history) ? g.history.map(function (h) { return { bids: fix(h.bids), tricks: fix(h.tricks) }; }) : [],
+      startedAt: g.startedAt || null,
+      savedId: g.savedId || null
+    };
+  }
+
+  function applySaved(d) {
+    if (!d) return;
+    var g = normaliseGame(d.game);
+    if (g) S.game = g;
+    if (d.rules) S.rules = { perTrick: Math.max(0, int(d.rules.perTrick, 1)), bonus: Math.max(0, int(d.rules.bonus, 10)), bowers: !!d.rules.bowers };
+    S.updatedAt = d.updatedAt || 0;
+    S.view = S.game.phase === 'setup' ? 'setup' : 'game';
+  }
+
+  // ---------- persistence ----------
+  function persist() {
+    S.updatedAt = Date.now();
+    var payload = { game: clone(S.game), rules: clone(S.rules), updatedAt: S.updatedAt };
+    lsSet(LS_STATE, payload);
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () {
+      if (db) db.doc('state/current').set(payload).catch(onDbError);
+    }, 400);
+  }
+  function savePastLocal() { lsSet(LS_PAST, S.past); }
+  function onDbError(e) {
+    if (e && (e.code === 'revoked' || e.code === 'not_granted' || e.code === 'capability_disabled' || e.code === 'capability_removed')) {
+      db = null;
+      S.store = 'local';
+      render();
+    }
+  }
+
+  applySaved(lsGet(LS_STATE));
+  var localPast = lsGet(LS_PAST);
+  if (Array.isArray(localPast)) S.past = localPast;
+
+  // ---------- derived game values ----------
+  function names() {
+    return S.game.players.map(function (p, i) { var t = (p || '').trim(); return t || 'Player ' + (i + 1); });
+  }
+  function points(bid, won) { return won * S.rules.perTrick + (won === bid ? S.rules.bonus : 0); }
+
+  function derive() {
+    var g = S.game;
+    var n = g.players.length;
+    var nm = names();
+    var cum = zeros(n);
+    var hits = zeros(n);
+    var steps = g.history.map(function (h) {
+      return nm.map(function (x, i) {
+        var hit = h.bids[i] === h.tricks[i];
+        cum[i] += points(h.bids[i], h.tricks[i]);
+        if (hit) hits[i] += 1;
+        return { total: cum[i], bid: h.bids[i], won: h.tricks[i], hit: hit };
+      });
+    });
+    var ri = Math.min(g.round, ROUNDS.length - 1);
+    var rd = ROUNDS[ri];
+    var dealer = (g.firstDealer + ri) % n;
+    var order = [];
+    for (var j = 1; j <= n; j++) order.push((dealer + j) % n);
+    var others = 0;
+    for (var a = 0; a < order.length - 1; a++) others += g.bids[order[a]];
+    var forbidden = rd.cards - others;
+    var forbidActive = forbidden >= 0 && forbidden <= rd.cards;
+    return {
+      n: n, names: nm, totals: cum, hits: hits, steps: steps, ri: ri, rd: rd, dealer: dealer, order: order,
+      forbidden: forbidden, forbidActive: forbidActive,
+      bidInvalid: forbidActive && g.bids[dealer] === forbidden,
+      totalBid: sum(g.bids), totalWon: sum(g.tricks)
+    };
+  }
+
+  function suitSpan(k, cls) {
+    var s = SUIT[k];
+    var c = (cls || '') + (k === 'NT' ? ' nt' : '') + (s.red ? ' red' : '');
+    return '<span class="' + c.trim() + '" aria-label="' + s.name + '">' + s.g + '</span>';
+  }
+  function trumpLine(k) { return k === 'NT' ? 'No trumps' : SUIT[k].name + ' trumps'; }
+  function cardsWord(n) { return n + (n === 1 ? ' card' : ' cards'); }
+
+  // ---------- views ----------
+  function viewSetup() {
+    var g = S.game;
+    var n = g.players.length;
+    var seats = g.players.map(function (p, i) {
+      var on = g.firstDealer === i;
+      return '<div class="seat">' +
+        '<span class="idx" aria-hidden="true">' + (i + 1) + '</span>' +
+        '<input id="seat-' + i + '" type="text" data-name="' + i + '" value="' + esc(p) + '" placeholder="Player ' + (i + 1) + '" aria-label="Player ' + (i + 1) + ' name" autocomplete="off" autocapitalize="words" enterkeyhint="next">' +
+        '<button class="pill" data-action="dealer" data-i="' + i + '" data-key="dealer-' + i + '" aria-pressed="' + on + '">' + (on ? 'Dealer' : 'Deal') + '</button>' +
+        (n > 2 ? '<button class="xbtn" data-action="remove" data-i="' + i + '" aria-label="Remove player ' + (i + 1) + '">' + ICON.close + '</button>' : '') +
+        '</div>';
+    }).join('');
+    var hands = ROUNDS.map(function (rd) {
+      return '<div><b>' + rd.cards + '</b>' + suitSpan(rd.trump) + '</div>';
+    }).join('');
+    var pt = S.rules.perTrick, bn = S.rules.bonus;
+    return '<section class="screen">' +
+      '<div class="topbar"><button class="textbtn" data-action="ref" data-key="ref">Card ranks</button><button class="textbtn" data-action="ledger" data-key="ledger">Ledger</button></div>' +
+      '<div class="scroll">' +
+        '<header class="mast">' +
+          '<span class="over">Chinese</span>' +
+          '<h1 class="title display" style="margin:0">Whist</h1>' +
+          '<div class="ornament" aria-hidden="true">◆</div>' +
+          '<span class="sub">Seat your players clockwise. Two to five at the table.</span>' +
+        '</header>' +
+        '<div class="setup-body">' +
+          '<div class="seats">' + seats +
+            (n < MAX_SEATS ? '<button class="add" data-action="add" data-key="add">+ Add a seat</button>' : '') +
+          '</div>' +
+          '<div><div class="kicker section-label">The Ten Hands</div><div class="hands">' + hands + '</div></div>' +
+          '<div class="rules">' +
+            '<div class="rules-title">House rules</div>' +
+            '<div class="rule"><div class="label"><span>Points per trick</span><span>Earned whether or not you make your call</span></div>' +
+              stepper('rule', 'perTrick', pt, 'points per trick') + '</div>' +
+            '<div class="rule"><div class="label"><span>Bonus for an exact call</span><span>Added when tricks match the bid</span></div>' +
+              stepper('rule', 'bonus', bn, 'exact-call bonus') + '</div>' +
+            bowersRow() +
+            '<div class="rule-note">The dealer calls last, and may not make the bids total the cards dealt.</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="foot"><button class="btn" data-action="start" data-key="start">Deal me in</button></div>' +
+    '</section>';
+  }
+
+  function stepper(kind, id, value, label) {
+    return '<div class="stepper">' +
+      '<button data-action="step" data-kind="' + kind + '" data-i="' + id + '" data-d="-1" data-key="' + kind + '-' + id + '-dn" aria-label="Less ' + esc(label) + '">−</button>' +
+      '<output aria-live="polite">' + value + '</output>' +
+      '<button data-action="step" data-kind="' + kind + '" data-i="' + id + '" data-d="1" data-key="' + kind + '-' + id + '-up" aria-label="More ' + esc(label) + '">+</button>' +
+      '</div>';
+  }
+
+  function viewGame() {
+    var g = S.game;
+    var D = derive();
+    var over = g.phase === 'over';
+    var live = g.phase === 'bid' || g.phase === 'tricks';
+    var best = g.history.length ? Math.max.apply(null, D.totals) : null;
+
+    var heads = D.names.map(function (nm, i) {
+      var lead = best !== null && D.totals[i] === best;
+      return '<div class="pcol">' +
+        '<span class="pname">' + esc(nm) + '</span>' +
+        '<span class="ptotal num' + (lead ? ' lead' : '') + '">' + D.totals[i] + '</span>' +
+        '<span class="tag">' + (live && i === D.dealer ? 'Deals' : '') + '</span>' +
+        '</div>';
+    }).join('');
+
+    var rows = ROUNDS.map(function (rd, r) {
+      var done = r < g.history.length;
+      var current = live && r === g.round;
+      var cells = D.names.map(function (x, i) {
+        if (done) {
+          var c = D.steps[r][i];
+          return '<div class="cell"><span class="m">' + c.total + '</span><span class="s ' + (c.hit ? 'hit' : 'miss') + '">' + c.bid + ' / ' + c.won + '</span></div>';
+        }
+        if (current && g.phase === 'tricks') return '<div class="cell"><span class="m bid">bid ' + g.bids[i] + '</span></div>';
+        return '<div class="cell"></div>';
+      }).join('');
+      return '<div class="grid lrow' + (done ? ' done' : '') + (current ? ' current' : '') + '" style="--n:' + D.n + '"' + (current ? ' data-current="1"' : '') + '>' +
+        '<div class="rl"><b>' + rd.cards + '</b>' + suitSpan(rd.trump) + '</div>' + cells + '</div>';
+    }).join('');
+
+    var banner = '';
+    if (over) {
+      var ranked = D.names.map(function (nm, i) { return { name: nm, total: D.totals[i], hits: D.hits[i] }; })
+        .sort(function (a, b) { return b.total - a.total || b.hits - a.hits; });
+      var top = ranked[0].total;
+      var winners = ranked.filter(function (x) { return x.total === top; }).map(function (x) { return x.name; });
+      var line = winners.length > 1 ? 'A tie at ' + top + ': ' + winners.join(' & ') : winners[0] + ', ' + top;
+      banner = '<div class="banner"><span class="kicker">The house salutes</span>' +
+        '<span class="display">' + esc(line) + '</span>' +
+        '<div class="ranks">' + ranked.map(function (x, i) { return '<span>' + (i + 1) + '. ' + esc(x.name) + ' ' + x.total + ' · ' + x.hits + ' called</span>'; }).join('') + '</div></div>';
+    }
+
+    var kicker = over ? 'Final tally' : 'Hand ' + (D.ri + 1) + ' of 10 · ' + trumpLine(D.rd.trump);
+    var headline = over ? 'Cash out' : cardsWord(D.rd.cards);
+    var glyph = over ? '' : '<span class="glyph' + (D.rd.trump === 'NT' ? ' nt' : '') + (SUIT[D.rd.trump].red ? ' red' : '') + '" aria-hidden="true">' + SUIT[D.rd.trump].g + '</span>';
+    var hint, label;
+    if (g.phase === 'bid') { hint = esc(D.names[D.dealer]) + ' deals · ' + esc(D.names[D.order[0]]) + ' calls first'; label = 'Place the bids'; }
+    else if (g.phase === 'tricks') { hint = 'Play the hand, then record the tricks'; label = 'Record tricks'; }
+    else { hint = 'Saved to the ledger. Same table, the deal moves one seat.'; label = 'Another round'; }
+    var undoDisabled = g.phase === 'bid' && g.history.length === 0;
+
+    return '<section class="screen">' +
+      '<div class="topbar">' +
+        '<div style="display:flex;flex-direction:column;gap:4px;min-width:0"><div class="kick-row"><span class="kicker">' + kicker + '</span>' +
+          '<button class="ranks-pill" data-action="ref" data-key="ref" aria-label="Card ranks for this hand">Ranks</button></div>' +
+        '<div class="head-title"><h1 class="display" style="margin:0">' + headline + '</h1>' + glyph + '</div></div>' +
+        '<div class="icons">' +
+          '<button class="iconbtn" data-action="undo" data-key="undo" aria-label="Undo"' + (undoDisabled ? ' disabled' : '') + '>' + ICON.undo + '</button>' +
+          '<button class="iconbtn" data-action="ledger" data-key="ledger" aria-label="Ledger of past games">' + ICON.ledger + '</button>' +
+          '<button class="iconbtn" data-action="askNew" data-key="askNew" aria-label="New game">' + ICON.plus + '</button>' +
+        '</div>' +
+      '</div>' +
+      banner +
+      '<div class="ledger">' +
+        '<div class="grid ledger-head" style="--n:' + D.n + '"><span class="corner">Bid<br>Won</span>' + heads + '</div>' +
+        '<div class="scroll" id="ledger-scroll">' + rows + '</div>' +
+      '</div>' +
+      '<div class="foot"><span class="hint">' + hint + '</span>' +
+        '<button class="btn" data-action="primary" data-key="primary">' + label + '</button></div>' +
+    '</section>';
+  }
+
+  function viewHistory() {
+    var past = S.past;
+    var map = {};
+    past.forEach(function (gm) {
+      if (!Array.isArray(gm.players) || !Array.isArray(gm.totals)) return;
+      var top = Math.max.apply(null, gm.totals);
+      var rounds = Array.isArray(gm.rounds) ? gm.rounds.length : 10;
+      gm.players.forEach(function (nm, i) {
+        var key = String(nm).trim().toLowerCase();
+        var e = map[key] || (map[key] = { name: String(nm).trim(), played: 0, won: 0, points: 0, hits: 0, rounds: 0 });
+        e.played += 1;
+        if (gm.totals[i] === top) e.won += 1;
+        e.points += gm.totals[i] || 0;
+        e.hits += (gm.hits && gm.hits[i]) || 0;
+        e.rounds += rounds;
+      });
+    });
+    var table = Object.keys(map).map(function (k) { return map[k]; })
+      .sort(function (a, b) { return b.won - a.won || (b.points / b.played) - (a.points / a.played); });
+
+    var board = table.length ? '<div><div class="kicker" style="margin-bottom:10px">Standings</div><div class="board">' +
+      '<div class="grid bh"><span>Player</span><span class="r">Games</span><span class="r">Wins</span><span class="r">Avg</span><span class="r">Called</span></div>' +
+      table.map(function (e, i) {
+        return '<div class="grid br"><div class="nm"><b>' + (i + 1) + '</b><span>' + esc(e.name) + '</span></div>' +
+          '<span class="r">' + e.played + '</span>' +
+          '<span class="r wins">' + e.won + '</span>' +
+          '<span class="r">' + Math.round(e.points / e.played) + '</span>' +
+          '<span class="r">' + (e.rounds ? Math.round(e.hits / e.rounds * 100) : 0) + '%</span></div>';
+      }).join('') + '</div></div>' : '';
+
+    var list = past.length ? '<div><div class="kicker" style="margin-bottom:10px">Games played</div><div class="games">' +
+      past.map(function (gm) {
+        if (!Array.isArray(gm.players) || !Array.isArray(gm.totals)) return '';
+        var order = gm.players.map(function (nm, i) { return { name: nm, total: gm.totals[i] }; }).sort(function (a, b) { return b.total - a.total; });
+        var top = order[0].total;
+        var winners = order.filter(function (x) { return x.total === top; }).map(function (x) { return x.name; });
+        var date = '';
+        try { date = new Date(gm.finishedAt).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) {}
+        var removing = S.removing === gm.id;
+        return '<div class="gm">' +
+          '<div class="gm-top"><span class="display">' + esc(winners.join(' & ')) + (winners.length > 1 ? ' tied' : ' won') + '</span><span class="kicker" style="letter-spacing:0.2em">' + esc(date) + '</span></div>' +
+          '<div class="scores">' + order.map(function (x, i) { return (i === 0 ? '<b>' : '') + esc(x.name) + ' ' + x.total + (i === 0 ? '</b>' : ''); }).join(' · ') + '</div>' +
+          '<div class="gm-actions">' + (removing
+            ? '<span class="note warn">Remove this game?</span><button class="mini danger" data-action="confirmRemove" data-id="' + esc(gm.id) + '">Remove</button><button class="mini" data-action="cancelRemove">Keep</button>'
+            : '<button class="mini" data-action="askRemove" data-id="' + esc(gm.id) + '">Remove</button>') +
+          '</div></div>';
+      }).join('') + '</div></div>'
+      : '<div class="empty">No finished games yet. Once all ten hands are scored, the game is filed here with everyone\'s standings.</div>';
+
+    var backup = '<div class="backup"><div class="kicker">Backup</div>' +
+      '<p class="legend" style="margin:0">Games are saved on this phone. Make a backup now and then, and restore it if you change phones.</p>' +
+      '<div class="row2"><button class="btn ghost" data-action="exportData" data-key="export">Back up</button>' +
+      '<label class="btn ghost filebtn">Restore<input type="file" accept="application/json,.json" data-restore aria-label="Restore from a backup file"></label></div>' +
+      (S.backupMsg ? '<div class="status" style="color:var(--soft)">' + esc(S.backupMsg) + '</div>' : '') +
+      '</div>';
+    return '<section class="screen">' +
+      '<div class="topbar">' +
+        '<button class="iconbtn" data-action="back" data-key="back" aria-label="Back">' + ICON.back + '</button>' +
+        '<span></span></div>' +
+      '<div class="scroll"><div class="hist-body">' +
+        '<header style="display:flex;flex-direction:column;gap:4px"><span class="kicker">The ledger</span><h1 class="display" style="margin:0;font-size:44px;line-height:1">Past games</h1></header>' +
+        board + list + backup +
+      '</div></div>' +
+    '</section>';
+  }
+
+  function bowersRow() {
+    return '<div class="toggle-row"><div class="label"><span>Play with bowers</span><span>Both jacks of the trump colour become the top trumps</span></div>' +
+      '<button class="switch" role="switch" data-action="bowers" data-key="bowers" aria-checked="' + !!S.rules.bowers + '" aria-label="Play with bowers"></button></div>';
+  }
+
+  var RANKS = ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2'];
+  var PARTNER = { H: 'D', D: 'H', C: 'S', S: 'C' };
+
+  function trumpOrder(t, bowers) {
+    if (t === 'NT') return [];
+    if (!bowers) return RANKS.map(function (r) { return { r: r, s: t }; });
+    return [{ r: 'J', s: t, label: 'Right bower' }, { r: 'J', s: PARTNER[t], label: 'Left bower' }]
+      .concat(RANKS.filter(function (r) { return r !== 'J'; }).map(function (r) { return { r: r, s: t }; }));
+  }
+  function plainOrder(s, t, bowers) {
+    var lose = bowers && t !== 'NT' && PARTNER[t] === s;
+    return RANKS.filter(function (r) { return !(lose && r === 'J'); });
+  }
+
+  function viewReference() {
+    var g = S.game;
+    var live = g.phase === 'bid' || g.phase === 'tricks';
+    var current = ROUNDS[Math.min(g.round, ROUNDS.length - 1)].trump;
+    var t = S.refTrump || (live ? current : 'H');
+    var bowers = !!S.rules.bowers;
+
+    var pick = CYCLE.map(function (k) {
+      return '<button data-action="refTrump" data-t="' + k + '" data-key="ref-' + k + '" aria-pressed="' + (k === t) + '" aria-label="' + SUIT[k].name + '">' + suitSpan(k) + '</button>';
+    }).join('');
+
+    var trumps = '';
+    if (t !== 'NT') {
+      var list = trumpOrder(t, bowers);
+      trumps = '<div><div class="rank-title"><span class="display">' + SUIT[t].name + ' are trumps</span><span class="kicker">High to low</span></div>' +
+        '<div class="cards">' + list.map(function (c, i) {
+          var red = SUIT[c.s].red;
+          return '<div class="card"><div class="face' + (c.label ? ' bower' : '') + '" role="img" aria-label="' + (c.label ? c.label + ', ' : '') + c.r + ' of ' + SUIT[c.s].name + '">' +
+            '<b>' + c.r + '</b><span class="' + (red ? 'red' : '') + '">' + SUIT[c.s].g + '</span></div>' +
+            '<span class="pos' + (c.label ? ' gold' : '') + '">' + (c.label ? (i === 0 ? 'RIGHT' : 'LEFT') : (i + 1)) + '</span></div>';
+        }).join('') + '</div></div>';
+    }
+
+    var plainSuits = ['H', 'D', 'C', 'S'].filter(function (s) { return s !== t; });
+    var plain = '<div><div class="rank-title"><span class="display">' + (t === 'NT' ? 'Every suit' : 'The other suits') + '</span><span class="kicker">High to low</span></div>' +
+      '<div class="order">' + plainSuits.map(function (s) {
+        var seq = plainOrder(s, t, bowers).join(' <i>›</i> ');
+        var note = bowers && t !== 'NT' && PARTNER[t] === s ? '<div class="note gold" style="margin-top:4px">Jack plays as a trump</div>' : '';
+        return '<div class="order-row"><span class="sg' + (SUIT[s].red ? ' red' : '') + '" aria-label="' + SUIT[s].name + '">' + SUIT[s].g + '</span>' +
+          '<div style="min-width:0"><div class="seq">' + seq + '</div>' + note + '</div></div>';
+      }).join('') + '</div></div>';
+
+    var legend = t === 'NT'
+      ? '<p class="legend" style="margin:0">No trumps this hand. Follow the suit led if you can. The highest card of the suit led takes the trick.</p>'
+      : '<p class="legend" style="margin:0">Follow the suit led if you can. If you can\'t, you may trump. The highest trump takes the trick, otherwise the highest card of the suit led.' +
+        (bowers ? ' The <b>left bower</b> counts as a ' + SUIT[t].name.toLowerCase().replace(/s$/, '') + ', so it follows ' + SUIT[t].name.toLowerCase() + ', not ' + SUIT[PARTNER[t]].name.toLowerCase() + '.' : '') + '</p>';
+
+    return '<section class="screen">' +
+      '<div class="topbar"><button class="iconbtn" data-action="back" data-key="back" aria-label="Back">' + ICON.back + '</button>' +
+        (live ? '<span class="kicker">This hand: ' + trumpLine(current) + '</span>' : '<span></span>') + '</div>' +
+      '<div class="scroll"><div class="ref-body">' +
+        '<header style="display:flex;flex-direction:column;gap:4px"><span class="kicker">Reference</span><h1 class="display" style="margin:0;font-size:44px;line-height:1">Card ranks</h1></header>' +
+        '<div><div class="kicker" style="margin-bottom:10px">Trumps</div><div class="suit-pick">' + pick + '</div></div>' +
+        bowersRow() +
+        trumps + plain + legend +
+      '</div></div>' +
+    '</section>';
+  }
+
+  function viewSheet() {
+    var g = S.game;
+    if (!S.sheet) return '';
+    var enter = S.sheet !== lastSheet ? ' enter' : '';
+    if (S.sheet === 'confirmNew') {
+      return '<div class="veil" data-action="closeSheet"></div>' +
+        '<div class="sheet' + enter + '" role="dialog" aria-modal="true" aria-label="Start a new game">' +
+          '<div class="grab"></div>' +
+          '<div class="sheet-head"><div><div class="display">New game?</div></div>' +
+            '<button class="iconbtn" data-action="closeSheet" aria-label="Close">' + ICON.close + '</button></div>' +
+          '<p class="confirm-copy" style="margin:0">This game isn\'t finished, so it won\'t be filed in the ledger. Starting over discards the hands played so far.</p>' +
+          '<div class="row2"><button class="btn ghost" data-action="closeSheet" data-key="keep">Keep playing</button>' +
+          '<button class="btn" data-action="discard" data-key="discard">Start over</button></div>' +
+        '</div>';
+    }
+    var D = derive();
+    var isBid = S.sheet === 'bid';
+    var rows = D.order.map(function (i, pos) {
+      var note = '', cls = '';
+      var value = isBid ? g.bids[i] : g.tricks[i];
+      if (isBid) {
+        if (i === D.dealer) {
+          note = D.forbidActive ? 'Dealer · may not call ' + D.forbidden : 'Dealer · any call';
+          cls = D.bidInvalid ? 'warn' : 'gold';
+        } else if (pos === 0) note = 'Calls first';
+      } else {
+        var hit = g.tricks[i] === g.bids[i];
+        note = 'Bid ' + g.bids[i] + ' · ' + (hit ? 'on the nose +' : '+') + points(g.bids[i], g.tricks[i]);
+        cls = hit ? 'hit' : '';
+      }
+      return '<div class="entry"><div class="who"><span>' + esc(D.names[i]) + '</span><span class="note ' + cls + '">' + (note || '&nbsp;') + '</span></div>' +
+        stepper(isBid ? 'bid' : 'won', String(i), value, 'for ' + D.names[i]) + '</div>';
+    }).join('');
+
+    var check, invalid;
+    if (isBid) {
+      invalid = D.bidInvalid;
+      if (invalid) check = esc(D.names[D.dealer]) + ' may not call ' + D.forbidden + '. The bids would total ' + D.rd.cards + '.';
+      else if (D.totalBid > D.rd.cards) check = 'Bids total ' + D.totalBid + ' · ' + (D.totalBid - D.rd.cards) + ' over the ' + D.rd.cards + ' tricks';
+      else check = 'Bids total ' + D.totalBid + ' · ' + (D.rd.cards - D.totalBid) + ' under the ' + D.rd.cards + ' tricks';
+    } else {
+      invalid = D.totalWon !== D.rd.cards;
+      check = !invalid ? 'All ' + D.rd.cards + ' tricks accounted for'
+        : (D.totalWon < D.rd.cards ? (D.rd.cards - D.totalWon) + ' of ' + D.rd.cards + ' tricks still to assign' : (D.totalWon - D.rd.cards) + ' too many tricks entered');
+    }
+
+    return '<div class="veil" data-action="closeSheet"></div>' +
+      '<div class="sheet' + enter + '" role="dialog" aria-modal="true" aria-label="' + (isBid ? 'The bids' : 'Tricks taken') + '">' +
+        '<div class="grab"></div>' +
+        '<div class="sheet-head"><div><div class="display">' + (isBid ? 'The bids' : 'Tricks taken') + '</div>' +
+          '<div class="kicker">' + cardsWord(D.rd.cards) + ' · ' + trumpLine(D.rd.trump) + '</div></div>' +
+          '<button class="iconbtn" data-action="closeSheet" aria-label="Close">' + ICON.close + '</button></div>' +
+        '<div class="entries">' + rows + '</div>' +
+        '<div class="check' + (invalid ? ' warn' : '') + '" aria-live="polite">' + check + '</div>' +
+        '<button class="btn" data-action="confirm" data-key="confirm"' + (invalid ? ' disabled' : '') + '>' + (isBid ? 'Lock the bids' : 'Settle the hand') + '</button>' +
+      '</div>';
+  }
+
+  function render() {
+    var active = document.activeElement;
+    var focusKey = active && active.getAttribute ? active.getAttribute('data-key') : null;
+    var scroller = document.getElementById('ledger-scroll');
+    var scrollTop = scroller ? scroller.scrollTop : null;
+    var html = S.view === 'history' ? viewHistory() : (S.view === 'ref' ? viewReference() : (S.view === 'game' ? viewGame() : viewSetup()));
+    app.innerHTML = '<div class="frame" aria-hidden="true"></div>' + html;
+    sheetRoot.innerHTML = viewSheet();
+    lastSheet = S.sheet;
+    var ns = document.getElementById('ledger-scroll');
+    if (ns) {
+      if (scrollTop !== null) ns.scrollTop = scrollTop;
+      else {
+        var cur = ns.querySelector('[data-current]');
+        if (cur) ns.scrollTop = Math.max(0, cur.offsetTop - ns.offsetTop - 88);
+      }
+    }
+    if (focusKey) {
+      var el = document.querySelector('[data-key="' + focusKey + '"]');
+      if (el && !el.disabled) el.focus({ preventScroll: true });
+    }
+  }
+
+  // ---------- actions ----------
+  function finishGame() {
+    var g = S.game;
+    var D = derive();
+    var id = 'g' + (g.startedAt || Date.now());
+    var rec = {
+      finishedAt: Date.now(),
+      startedAt: g.startedAt || null,
+      players: D.names,
+      totals: D.totals,
+      hits: D.hits,
+      rounds: clone(g.history),
+      rules: clone(S.rules)
+    };
+    g.savedId = id;
+    var entry = clone(rec); entry.id = id;
+    S.past = [entry].concat(S.past.filter(function (p) { return p.id !== id; }));
+    savePastLocal();
+    if (db) db.doc('games/' + id).set(rec).catch(onDbError);
+  }
+  function unfileGame(id) {
+    S.past = S.past.filter(function (p) { return p.id !== id; });
+    savePastLocal();
+    if (db) db.doc('games/' + id).delete().catch(onDbError);
+  }
+  function newTable(players, firstDealer) {
+    var n = players.length;
+    S.game = { players: players, firstDealer: firstDealer, phase: 'bid', round: 0, bids: zeros(n), tricks: zeros(n), history: [], startedAt: Date.now(), savedId: null };
+  }
+
+  function openAux(view) {
+    if (S.view === 'setup' || S.view === 'game') S.prevView = S.view;
+    S.view = view; S.removing = null; S.sheet = null;
+    render();
+    var sc = app.querySelector('.scroll');
+    if (sc) sc.scrollTop = 0;
+  }
+
+  var actions = {
+    dealer: function (d) { S.game.firstDealer = int(d.i, 0); persist(); render(); },
+    remove: function (d) {
+      var i = int(d.i, 0), g = S.game;
+      if (g.players.length <= 2) return;
+      g.players.splice(i, 1);
+      if (g.firstDealer === i) g.firstDealer = 0; else if (g.firstDealer > i) g.firstDealer -= 1;
+      g.bids = zeros(g.players.length); g.tricks = zeros(g.players.length);
+      persist(); render();
+    },
+    add: function () {
+      var g = S.game;
+      if (g.players.length >= MAX_SEATS) return;
+      g.players.push(''); g.bids = zeros(g.players.length); g.tricks = zeros(g.players.length);
+      persist(); render();
+      var el = document.getElementById('seat-' + (g.players.length - 1));
+      if (el) el.focus();
+    },
+    start: function () {
+      newTable(S.game.players.slice(), S.game.firstDealer);
+      S.view = 'game'; persist(); render();
+    },
+    step: function (d) {
+      var delta = int(d.d, 0), g = S.game;
+      if (d.kind === 'rule') {
+        var key = d.i === 'bonus' ? 'bonus' : 'perTrick';
+        S.rules[key] = Math.max(0, Math.min(key === 'bonus' ? 50 : 10, S.rules[key] + delta));
+      } else {
+        var i = int(d.i, 0);
+        var cards = ROUNDS[Math.min(g.round, ROUNDS.length - 1)].cards;
+        var arr = d.kind === 'bid' ? g.bids : g.tricks;
+        arr[i] = Math.max(0, Math.min(cards, arr[i] + delta));
+      }
+      persist(); render();
+    },
+    primary: function () {
+      var g = S.game;
+      if (g.phase === 'over') {
+        newTable(g.players.slice(), (g.firstDealer + 1) % g.players.length);
+        persist(); render();
+      } else {
+        S.sheet = g.phase === 'bid' ? 'bid' : 'tricks';
+        render();
+      }
+    },
+    closeSheet: function () { S.sheet = null; render(); },
+    confirm: function () {
+      var g = S.game, D = derive();
+      if (S.sheet === 'bid') {
+        if (D.bidInvalid) return;
+        g.phase = 'tricks'; g.tricks = zeros(D.n);
+      } else if (S.sheet === 'tricks') {
+        if (D.totalWon !== D.rd.cards) return;
+        g.history.push({ bids: g.bids.slice(), tricks: g.tricks.slice() });
+        g.round += 1;
+        g.bids = zeros(D.n); g.tricks = zeros(D.n);
+        if (g.round >= ROUNDS.length) { g.phase = 'over'; finishGame(); }
+        else g.phase = 'bid';
+      }
+      S.sheet = null; persist(); render();
+    },
+    undo: function () {
+      var g = S.game;
+      if (g.phase === 'tricks') { g.phase = 'bid'; }
+      else if (g.history.length) {
+        if (g.phase === 'over' && g.savedId) { unfileGame(g.savedId); g.savedId = null; }
+        var last = g.history.pop();
+        g.round = g.history.length;
+        g.bids = last.bids.slice(); g.tricks = last.tricks.slice();
+        g.phase = 'tricks';
+      }
+      persist(); render();
+    },
+    askNew: function () {
+      var g = S.game;
+      var unfinished = (g.phase === 'bid' || g.phase === 'tricks') && (g.history.length > 0 || g.phase === 'tricks');
+      if (unfinished) { S.sheet = 'confirmNew'; render(); }
+      else actions.discard();
+    },
+    discard: function () {
+      var g = S.game;
+      S.game = blankGame(g.players.slice(), g.firstDealer);
+      S.sheet = null; S.view = 'setup'; persist(); render();
+    },
+    ledger: function () { openAux('history'); },
+    ref: function () { S.refTrump = null; openAux('ref'); },
+    refTrump: function (d) { if (SUIT[d.t]) { S.refTrump = d.t; render(); } },
+    bowers: function () { S.rules.bowers = !S.rules.bowers; persist(); render(); },
+    back: function () { S.view = S.game.phase === 'setup' ? 'setup' : 'game'; render(); },
+    exportData: function () {
+      var data = { app: 'chinese-whist', version: 1, exportedAt: Date.now(), state: { game: clone(S.game), rules: clone(S.rules), updatedAt: S.updatedAt }, past: clone(S.past) };
+      var json = JSON.stringify(data, null, 2);
+      var name = 'chinese-whist-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+      var file = null;
+      try { file = new File([json], name, { type: 'application/json' }); } catch (e) {}
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: 'Chinese Whist backup' })
+          .then(function () { S.backupMsg = 'Backup shared. Save it to Files to keep it safe.'; render(); })
+          .catch(function () {});
+        return;
+      }
+      var url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+      var a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+      S.backupMsg = 'Backup saved as ' + name;
+      render();
+    },
+    askRemove: function (d) { S.removing = d.id; render(); },
+    cancelRemove: function () { S.removing = null; render(); },
+    confirmRemove: function (d) {
+      if (S.game.savedId === d.id) S.game.savedId = null;
+      unfileGame(d.id); S.removing = null; persist(); render();
+    }
+  };
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-action]');
+    if (!t || t.disabled) return;
+    var fn = actions[t.getAttribute('data-action')];
+    if (fn) fn(t.dataset);
+  });
+  app.addEventListener('input', function (e) {
+    var t = e.target;
+    if (t && t.hasAttribute('data-name')) {
+      S.game.players[int(t.getAttribute('data-name'), 0)] = t.value;
+      persist();
+    }
+  });
+  app.addEventListener('change', function (e) {
+    var t = e.target;
+    if (!t || !t.hasAttribute('data-restore') || !t.files || !t.files[0]) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var data = JSON.parse(String(reader.result));
+        if (!data || data.app !== 'chinese-whist') throw new Error('not a backup');
+        var incoming = Array.isArray(data.past) ? data.past.filter(function (p) { return p && p.id && Array.isArray(p.players) && Array.isArray(p.totals); }) : [];
+        var known = {};
+        S.past.forEach(function (p) { known[p.id] = true; });
+        var added = incoming.filter(function (p) { return !known[p.id]; });
+        S.past = S.past.concat(added).sort(function (a, b) { return (b.finishedAt || 0) - (a.finishedAt || 0); });
+        savePastLocal();
+        var st = data.state;
+        var adoptGame = st && st.game && (S.game.phase === 'setup' && S.game.history.length === 0);
+        if (st && st.rules) S.rules = { perTrick: Math.max(0, int(st.rules.perTrick, 1)), bonus: Math.max(0, int(st.rules.bonus, 10)), bowers: !!st.rules.bowers };
+        if (adoptGame) { var g = normaliseGame(st.game); if (g) S.game = g; }
+        persist();
+        S.backupMsg = 'Restored ' + added.length + (added.length === 1 ? ' game' : ' games') + (adoptGame && S.game.phase !== 'setup' ? ' and the game in progress.' : '.');
+      } catch (err) {
+        S.backupMsg = "That file isn't a Chinese Whist backup. Choose the .json file made with Back up.";
+      }
+      render();
+    };
+    reader.readAsText(t.files[0]);
+  });
+  app.addEventListener('keydown', function (e) {
+    var t = e.target;
+    if (e.key === 'Enter' && t && t.hasAttribute('data-name')) {
+      e.preventDefault();
+      var next = document.getElementById('seat-' + (int(t.getAttribute('data-name'), 0) + 1));
+      if (next) next.focus(); else t.blur();
+    }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && S.sheet) { S.sheet = null; render(); }
+  });
+
+  function register() {
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {}); } catch (e) {}
+    if ('serviceWorker' in navigator && location.protocol === 'https:') {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    }
+  }
+
+  render();
+  register();
+})();
+</script>
+</body>
+</html>
