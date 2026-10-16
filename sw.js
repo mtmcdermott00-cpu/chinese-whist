@@ -1,6 +1,6 @@
 // Chinese Whist offline support.
 // Bump CACHE when you change any file so phones pick up the new version.
-var CACHE = 'whist-v4';
+var CACHE = 'whist-v5';
 var SHELL = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', function (e) {

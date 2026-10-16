@@ -21,12 +21,12 @@ All paths are relative so the site works under `https://mtmcdermott00-cpu.github
 - Hook rule: the dealer may not bid the number that would make all bids total the cards dealt. The app blocks "Lock the bids" until that holds.
 - Tricks entered must total the cards dealt before a hand can be scored.
 - Scoring (house rules, editable on the setup screen): `points = tricks won x perTrick + (tricks won == bid ? bonus : 0)`. Defaults: perTrick 1, bonus 10.
-- Optional bowers house rule (off by default): right bower (jack of trumps) and left bower (other jack of the same colour) are the top two trumps. Affects the Card ranks reference only, not scoring.
+- Bowers are always in (no switch): right bower (jack of trumps) and left bower (other jack of the same colour) are the top two trumps. `S.rules.bowers` is always true. Affects the Card ranks reference only, not scoring.
 - After hand 10 the game is filed in the ledger. "Another round" starts a rematch with the next player dealing first.
 
 ## Screens (all in `index.html`, chosen by `S.view`)
 
-- `setup`: masthead ("Chinese" in tracked gold caps over italic "Whist"), seats, the ten-hands grid, house rules (per trick, bonus, bowers switch), "Deal me in".
+- `setup`: masthead ("Chinese" in tracked gold caps over italic "Whist"), seats, the ten-hands grid, house rules (per trick, bonus, and a note that bowers are always in), "Deal me in".
 - `game`: hand kicker with a Ranks pill, headline (e.g. "8 cards" plus suit), undo / ledger / new game icons, the ledger grid (one column per player, one row per hand, running total with bid/won underneath, gold for an exact call, muted rose for a miss), and one gold action button. Bids and tricks are entered in a bottom sheet in bidding order.
 - `history` (the Ledger): standings (games, wins, average, % called exactly), list of finished games with remove (two-step confirm), Back up / Restore.
 - `ref` (Card ranks): pick a trump suit or no trumps, see trumps as cards high to low, the plain-suit order, and a follow-suit reminder. Opens on the current hand's trumps.

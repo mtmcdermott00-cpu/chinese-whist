@@ -215,13 +215,6 @@ input { font: inherit; }
 .empty { padding: 28px 8px; text-align: center; color: var(--muted); font-weight: 300; line-height: 1.55; text-wrap: balance; }
 .status { font-size: 11px; font-weight: 300; letter-spacing: 0.06em; color: var(--dim); text-align: center; }
 
-/* ----- Switch ----- */
-.switch { width: 52px; height: 32px; border-radius: 16px; border: 1px solid rgba(201,164,92,0.4); background: transparent; position: relative; padding: 0; flex-shrink: 0; }
-.switch::after { content: ""; position: absolute; top: 4px; left: 4px; width: 22px; height: 22px; border-radius: 50%; background: var(--dim); transition: transform 160ms ease, background 160ms ease; }
-.switch[aria-checked="true"] { border-color: var(--gold); }
-.switch[aria-checked="true"]::after { transform: translateX(20px); background: var(--gold); }
-@media (prefers-reduced-motion: reduce) { .switch::after { transition: none; } }
-
 /* ----- Card ranks ----- */
 .kick-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .ranks-pill { height: 26px; padding: 0 10px; border-radius: 13px; border: 1px solid rgba(201,164,92,0.4); background: transparent; color: var(--gold); font-size: 9px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; }
@@ -231,10 +224,6 @@ input { font: inherit; }
 .suit-pick button .nt { font-size: 13px; letter-spacing: 0.06em; font-weight: 500; }
 .suit-pick button[aria-pressed="true"] { background: var(--gold); color: var(--ink); }
 .suit-pick button[aria-pressed="true"] .red { color: #8E1F2E; }
-.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--hair); }
-.toggle-row .label { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.toggle-row .label span:first-child { font-size: 16px; }
-.toggle-row .label span:last-child { font-size: 12px; font-weight: 300; color: var(--muted); }
 .rank-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .rank-title .display { font-size: 24px; }
 .cards { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px 6px; }
@@ -307,7 +296,7 @@ input { font: inherit; }
   var S = {
     view: 'setup',
     game: blankGame(['', '', '', ''], 0),
-    rules: { perTrick: 1, bonus: 10, bowers: false },
+    rules: { perTrick: 1, bonus: 10, bowers: true },
     sheet: null,
     refTrump: null,
     past: [],
@@ -338,7 +327,7 @@ input { font: inherit; }
     if (!d) return;
     var g = normaliseGame(d.game);
     if (g) S.game = g;
-    if (d.rules) S.rules = { perTrick: Math.max(0, int(d.rules.perTrick, 1)), bonus: Math.max(0, int(d.rules.bonus, 10)), bowers: !!d.rules.bowers };
+    if (d.rules) S.rules = { perTrick: Math.max(0, int(d.rules.perTrick, 1)), bonus: Math.max(0, int(d.rules.bonus, 10)), bowers: true };
     S.updatedAt = d.updatedAt || 0;
     S.view = S.game.phase === 'setup' ? 'setup' : 'game';
   }
@@ -437,8 +426,7 @@ input { font: inherit; }
               stepper('rule', 'perTrick', pt, 'points per trick') + '</div>' +
             '<div class="rule"><div class="label"><span>Bonus for an exact call</span><span>Added when tricks match the bid</span></div>' +
               stepper('rule', 'bonus', bn, 'exact-call bonus') + '</div>' +
-            bowersRow() +
-            '<div class="rule-note">The dealer calls last, and may not make the bids total the cards dealt.</div>' +
+            '<div class="rule-note">The dealer calls last, and may not make the bids total the cards dealt. Bowers are always in: both jacks of the trump colour are the top trumps.</div>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -593,11 +581,6 @@ input { font: inherit; }
     '</section>';
   }
 
-  function bowersRow() {
-    return '<div class="toggle-row"><div class="label"><span>Play with bowers</span><span>Both jacks of the trump colour become the top trumps</span></div>' +
-      '<button class="switch" role="switch" data-action="bowers" data-key="bowers" aria-checked="' + !!S.rules.bowers + '" aria-label="Play with bowers"></button></div>';
-  }
-
   var RANKS = ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2'];
   var PARTNER = { H: 'D', D: 'H', C: 'S', S: 'C' };
 
@@ -617,7 +600,7 @@ input { font: inherit; }
     var live = g.phase === 'bid' || g.phase === 'tricks';
     var current = ROUNDS[Math.min(g.round, ROUNDS.length - 1)].trump;
     var t = S.refTrump || (live ? current : 'H');
-    var bowers = !!S.rules.bowers;
+    var bowers = true;
 
     var pick = CYCLE.map(function (k) {
       return '<button data-action="refTrump" data-t="' + k + '" data-key="ref-' + k + '" aria-pressed="' + (k === t) + '" aria-label="' + SUIT[k].name + '">' + suitSpan(k) + '</button>';
@@ -655,7 +638,6 @@ input { font: inherit; }
       '<div class="scroll"><div class="ref-body">' +
         '<header style="display:flex;flex-direction:column;gap:4px"><span class="kicker">Reference</span><h1 class="display" style="margin:0;font-size:44px;line-height:1">Card ranks</h1></header>' +
         '<div><div class="kicker" style="margin-bottom:10px">Trumps</div><div class="suit-pick">' + pick + '</div></div>' +
-        bowersRow() +
         trumps + plain + legend +
       '</div></div>' +
     '</section>';
@@ -865,7 +847,6 @@ input { font: inherit; }
     ledger: function () { openAux('history'); },
     ref: function () { S.refTrump = null; openAux('ref'); },
     refTrump: function (d) { if (SUIT[d.t]) { S.refTrump = d.t; render(); } },
-    bowers: function () { S.rules.bowers = !S.rules.bowers; persist(); render(); },
     back: function () { S.view = S.game.phase === 'setup' ? 'setup' : 'game'; render(); },
     exportData: function () {
       var data = { app: 'chinese-whist', version: 1, exportedAt: Date.now(), state: { game: clone(S.game), rules: clone(S.rules), updatedAt: S.updatedAt }, past: clone(S.past) };
@@ -924,7 +905,7 @@ input { font: inherit; }
         savePastLocal();
         var st = data.state;
         var adoptGame = st && st.game && (S.game.phase === 'setup' && S.game.history.length === 0);
-        if (st && st.rules) S.rules = { perTrick: Math.max(0, int(st.rules.perTrick, 1)), bonus: Math.max(0, int(st.rules.bonus, 10)), bowers: !!st.rules.bowers };
+        if (st && st.rules) S.rules = { perTrick: Math.max(0, int(st.rules.perTrick, 1)), bonus: Math.max(0, int(st.rules.bonus, 10)), bowers: true };
         if (adoptGame) { var g = normaliseGame(st.game); if (g) S.game = g; }
         persist();
         S.backupMsg = 'Restored ' + added.length + (added.length === 1 ? ' game' : ' games') + (adoptGame && S.game.phase !== 'setup' ? ' and the game in progress.' : '.');
