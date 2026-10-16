@@ -312,12 +312,9 @@ input { font: inherit; }
     refTrump: null,
     past: [],
     updatedAt: 0,
-    removing: null,
-    store: 'local'
+    removing: null
   };
   var lastSheet = null;
-  var db = null;
-  var saveTimer = null;
 
   function normaliseGame(g) {
     if (!g || !Array.isArray(g.players) || g.players.length < 2) return null;
@@ -351,19 +348,8 @@ input { font: inherit; }
     S.updatedAt = Date.now();
     var payload = { game: clone(S.game), rules: clone(S.rules), updatedAt: S.updatedAt };
     lsSet(LS_STATE, payload);
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(function () {
-      if (db) db.doc('state/current').set(payload).catch(onDbError);
-    }, 400);
   }
   function savePastLocal() { lsSet(LS_PAST, S.past); }
-  function onDbError(e) {
-    if (e && (e.code === 'revoked' || e.code === 'not_granted' || e.code === 'capability_disabled' || e.code === 'capability_removed')) {
-      db = null;
-      S.store = 'local';
-      render();
-    }
-  }
 
   applySaved(lsGet(LS_STATE));
   var localPast = lsGet(LS_PAST);
@@ -774,12 +760,10 @@ input { font: inherit; }
     var entry = clone(rec); entry.id = id;
     S.past = [entry].concat(S.past.filter(function (p) { return p.id !== id; }));
     savePastLocal();
-    if (db) db.doc('games/' + id).set(rec).catch(onDbError);
   }
   function unfileGame(id) {
     S.past = S.past.filter(function (p) { return p.id !== id; });
     savePastLocal();
-    if (db) db.doc('games/' + id).delete().catch(onDbError);
   }
   function newTable(players, firstDealer) {
     var n = players.length;
