@@ -80,6 +80,9 @@ input { font: inherit; }
 .iconbtn { width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(201,164,92,0.4); background: transparent; color: var(--gold); display: grid; place-items: center; padding: 0; }
 .iconbtn:disabled { opacity: 0.35; }
 .iconbtn svg { width: 18px; height: 18px; }
+.iconlab { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 48px; padding: 0; border: 0; background: transparent; color: var(--gold); }
+.iconlab:disabled { opacity: 0.35; }
+.iconlab .lbl { font-size: 9px; font-weight: 600; letter-spacing: 0.2em; padding-left: 0.2em; text-transform: uppercase; }
 .textbtn { height: 44px; padding: 0 4px; border: 0; background: transparent; color: var(--gold); font-size: 11px; font-weight: 600; letter-spacing: 0.26em; text-transform: uppercase; }
 
 .btn { width: 100%; height: 56px; border-radius: 2px; border: 1px solid var(--gold); background: var(--gold); color: var(--ink); font-size: 13px; font-weight: 600; letter-spacing: 0.3em; text-transform: uppercase; }
@@ -138,7 +141,7 @@ input { font: inherit; }
 .ledger-head { align-items: end; padding: 14px 0 12px; border-bottom: 1px solid var(--line-strong); }
 .ledger-head .corner { font-size: 9px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); line-height: 1.4; }
 .pcol { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
-.pcol .pname { font-size: 10px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--soft); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pcol .pname { border: 0; background: transparent; padding: 4px 0; text-decoration: underline dotted rgba(201,164,92,0.6); text-underline-offset: 4px; font-size: 10px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--soft); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pcol .ptotal { font-family: var(--display); font-weight: 500; font-size: 30px; line-height: 1; }
 .pcol .ptotal.lead { color: var(--gold-hi); }
 .pcol .tag { height: 12px; font-size: 9px; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; color: var(--gold); }
@@ -215,13 +218,6 @@ input { font: inherit; }
 .empty { padding: 28px 8px; text-align: center; color: var(--muted); font-weight: 300; line-height: 1.55; text-wrap: balance; }
 .status { font-size: 11px; font-weight: 300; letter-spacing: 0.06em; color: var(--dim); text-align: center; }
 
-/* ----- Switch ----- */
-.switch { width: 52px; height: 32px; border-radius: 16px; border: 1px solid rgba(201,164,92,0.4); background: transparent; position: relative; padding: 0; flex-shrink: 0; }
-.switch::after { content: ""; position: absolute; top: 4px; left: 4px; width: 22px; height: 22px; border-radius: 50%; background: var(--dim); transition: transform 160ms ease, background 160ms ease; }
-.switch[aria-checked="true"] { border-color: var(--gold); }
-.switch[aria-checked="true"]::after { transform: translateX(20px); background: var(--gold); }
-@media (prefers-reduced-motion: reduce) { .switch::after { transition: none; } }
-
 /* ----- Card ranks ----- */
 .kick-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .ranks-pill { height: 26px; padding: 0 10px; border-radius: 13px; border: 1px solid rgba(201,164,92,0.4); background: transparent; color: var(--gold); font-size: 9px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; }
@@ -231,10 +227,6 @@ input { font: inherit; }
 .suit-pick button .nt { font-size: 13px; letter-spacing: 0.06em; font-weight: 500; }
 .suit-pick button[aria-pressed="true"] { background: var(--gold); color: var(--ink); }
 .suit-pick button[aria-pressed="true"] .red { color: #8E1F2E; }
-.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--hair); }
-.toggle-row .label { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.toggle-row .label span:first-child { font-size: 16px; }
-.toggle-row .label span:last-child { font-size: 12px; font-weight: 300; color: var(--muted); }
 .rank-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .rank-title .display { font-size: 24px; }
 .cards { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px 6px; }
@@ -307,7 +299,7 @@ input { font: inherit; }
   var S = {
     view: 'setup',
     game: blankGame(['', '', '', ''], 0),
-    rules: { perTrick: 1, bonus: 10, bowers: false },
+    rules: { perTrick: 1, bonus: 10, bowers: true },
     sheet: null,
     refTrump: null,
     past: [],
@@ -338,7 +330,7 @@ input { font: inherit; }
     if (!d) return;
     var g = normaliseGame(d.game);
     if (g) S.game = g;
-    if (d.rules) S.rules = { perTrick: Math.max(0, int(d.rules.perTrick, 1)), bonus: Math.max(0, int(d.rules.bonus, 10)), bowers: !!d.rules.bowers };
+    if (d.rules) S.rules = { perTrick: Math.max(0, int(d.rules.perTrick, 1)), bonus: Math.max(0, int(d.rules.bonus, 10)), bowers: true };
     S.updatedAt = d.updatedAt || 0;
     S.view = S.game.phase === 'setup' ? 'setup' : 'game';
   }
@@ -437,8 +429,7 @@ input { font: inherit; }
               stepper('rule', 'perTrick', pt, 'points per trick') + '</div>' +
             '<div class="rule"><div class="label"><span>Bonus for an exact call</span><span>Added when tricks match the bid</span></div>' +
               stepper('rule', 'bonus', bn, 'exact-call bonus') + '</div>' +
-            bowersRow() +
-            '<div class="rule-note">The dealer calls last, and may not make the bids total the cards dealt.</div>' +
+            '<div class="rule-note">The dealer calls last, and may not make the bids total the cards dealt. Bowers are always in: both jacks of the trump colour are the top trumps.</div>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -464,7 +455,7 @@ input { font: inherit; }
     var heads = D.names.map(function (nm, i) {
       var lead = best !== null && D.totals[i] === best;
       return '<div class="pcol">' +
-        '<span class="pname">' + esc(nm) + '</span>' +
+        '<button class="pname" data-action="names" aria-label="Fix names, ' + esc(nm) + '">' + esc(nm) + '</button>' +
         '<span class="ptotal num' + (lead ? ' lead' : '') + '">' + D.totals[i] + '</span>' +
         '<span class="tag">' + (live && i === D.dealer ? 'Deals' : '') + '</span>' +
         '</div>';
@@ -501,7 +492,7 @@ input { font: inherit; }
     var headline = over ? 'Cash out' : cardsWord(D.rd.cards);
     var glyph = over ? '' : '<span class="glyph' + (D.rd.trump === 'NT' ? ' nt' : '') + (SUIT[D.rd.trump].red ? ' red' : '') + '" aria-hidden="true">' + SUIT[D.rd.trump].g + '</span>';
     var hint, label;
-    if (g.phase === 'bid') { hint = esc(D.names[D.dealer]) + ' deals · ' + esc(D.names[D.order[0]]) + ' calls first'; label = 'Place the bids'; }
+    if (g.phase === 'bid') { hint = esc(D.names[D.dealer]) + ' deals · ' + esc(D.names[D.order[0]]) + ' calls first' + (g.history.length ? '' : '<br>Name wrong? Tap it above to fix it.'); label = 'Place the bids'; }
     else if (g.phase === 'tricks') { hint = 'Play the hand, then record the tricks'; label = 'Record tricks'; }
     else { hint = 'Saved to the ledger. Same table, the deal moves one seat.'; label = 'Another round'; }
     var undoDisabled = g.phase === 'bid' && g.history.length === 0;
@@ -512,9 +503,9 @@ input { font: inherit; }
           '<button class="ranks-pill" data-action="ref" data-key="ref" aria-label="Card ranks for this hand">Ranks</button></div>' +
         '<div class="head-title"><h1 class="display" style="margin:0">' + headline + '</h1>' + glyph + '</div></div>' +
         '<div class="icons">' +
-          '<button class="iconbtn" data-action="undo" data-key="undo" aria-label="Undo"' + (undoDisabled ? ' disabled' : '') + '>' + ICON.undo + '</button>' +
-          '<button class="iconbtn" data-action="ledger" data-key="ledger" aria-label="Ledger of past games">' + ICON.ledger + '</button>' +
-          '<button class="iconbtn" data-action="askNew" data-key="askNew" aria-label="New game">' + ICON.plus + '</button>' +
+          iconLab('undo', 'Undo', ICON.undo, undoDisabled) +
+          iconLab('ledger', 'Ledger', ICON.ledger) +
+          iconLab('askNew', 'New', ICON.plus) +
         '</div>' +
       '</div>' +
       banner +
@@ -525,6 +516,11 @@ input { font: inherit; }
       '<div class="foot"><span class="hint">' + hint + '</span>' +
         '<button class="btn" data-action="primary" data-key="primary">' + label + '</button></div>' +
     '</section>';
+  }
+
+  function iconLab(action, label, icon, disabled) {
+    return '<button class="iconlab" data-action="' + action + '" data-key="' + action + '"' + (disabled ? ' disabled' : '') + '>' +
+      '<span class="iconbtn" aria-hidden="true">' + icon + '</span><span class="lbl">' + label + '</span></button>';
   }
 
   function viewHistory() {
@@ -593,11 +589,6 @@ input { font: inherit; }
     '</section>';
   }
 
-  function bowersRow() {
-    return '<div class="toggle-row"><div class="label"><span>Play with bowers</span><span>Both jacks of the trump colour become the top trumps</span></div>' +
-      '<button class="switch" role="switch" data-action="bowers" data-key="bowers" aria-checked="' + !!S.rules.bowers + '" aria-label="Play with bowers"></button></div>';
-  }
-
   var RANKS = ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2'];
   var PARTNER = { H: 'D', D: 'H', C: 'S', S: 'C' };
 
@@ -617,7 +608,7 @@ input { font: inherit; }
     var live = g.phase === 'bid' || g.phase === 'tricks';
     var current = ROUNDS[Math.min(g.round, ROUNDS.length - 1)].trump;
     var t = S.refTrump || (live ? current : 'H');
-    var bowers = !!S.rules.bowers;
+    var bowers = true;
 
     var pick = CYCLE.map(function (k) {
       return '<button data-action="refTrump" data-t="' + k + '" data-key="ref-' + k + '" aria-pressed="' + (k === t) + '" aria-label="' + SUIT[k].name + '">' + suitSpan(k) + '</button>';
@@ -655,7 +646,6 @@ input { font: inherit; }
       '<div class="scroll"><div class="ref-body">' +
         '<header style="display:flex;flex-direction:column;gap:4px"><span class="kicker">Reference</span><h1 class="display" style="margin:0;font-size:44px;line-height:1">Card ranks</h1></header>' +
         '<div><div class="kicker" style="margin-bottom:10px">Trumps</div><div class="suit-pick">' + pick + '</div></div>' +
-        bowersRow() +
         trumps + plain + legend +
       '</div></div>' +
     '</section>';
@@ -674,6 +664,20 @@ input { font: inherit; }
           '<p class="confirm-copy" style="margin:0">This game isn\'t finished, so it won\'t be filed in the ledger. Starting over discards the hands played so far.</p>' +
           '<div class="row2"><button class="btn ghost" data-action="closeSheet" data-key="keep">Keep playing</button>' +
           '<button class="btn" data-action="discard" data-key="discard">Start over</button></div>' +
+        '</div>';
+    }
+    if (S.sheet === 'names') {
+      var fields = g.players.map(function (p, i) {
+        return '<div class="seat"><span class="idx" aria-hidden="true">' + (i + 1) + '</span>' +
+          '<input id="rename-' + i + '" type="text" data-rename="' + i + '" value="' + esc(p) + '" placeholder="Player ' + (i + 1) + '" aria-label="Player ' + (i + 1) + ' name" autocomplete="off" autocapitalize="words" enterkeyhint="next"></div>';
+      }).join('');
+      return '<div class="veil" data-action="closeSheet"></div>' +
+        '<div class="sheet' + enter + '" role="dialog" aria-modal="true" aria-label="Fix names">' +
+          '<div class="grab"></div>' +
+          '<div class="sheet-head"><div><div class="display">Names</div><div class="kicker">Scores stay as they are</div></div>' +
+            '<button class="iconbtn" data-action="closeSheet" aria-label="Close">' + ICON.close + '</button></div>' +
+          '<div class="seats">' + fields + '</div>' +
+          '<button class="btn" data-action="closeSheet" data-key="namesDone">Done</button>' +
         '</div>';
     }
     var D = derive();
@@ -824,6 +828,7 @@ input { font: inherit; }
       }
     },
     closeSheet: function () { S.sheet = null; render(); },
+    names: function () { S.sheet = 'names'; render(); },
     confirm: function () {
       var g = S.game, D = derive();
       if (S.sheet === 'bid') {
@@ -865,7 +870,6 @@ input { font: inherit; }
     ledger: function () { openAux('history'); },
     ref: function () { S.refTrump = null; openAux('ref'); },
     refTrump: function (d) { if (SUIT[d.t]) { S.refTrump = d.t; render(); } },
-    bowers: function () { S.rules.bowers = !S.rules.bowers; persist(); render(); },
     back: function () { S.view = S.game.phase === 'setup' ? 'setup' : 'game'; render(); },
     exportData: function () {
       var data = { app: 'chinese-whist', version: 1, exportedAt: Date.now(), state: { game: clone(S.game), rules: clone(S.rules), updatedAt: S.updatedAt }, past: clone(S.past) };
@@ -908,6 +912,26 @@ input { font: inherit; }
       persist();
     }
   });
+  sheetRoot.addEventListener('input', function (e) {
+    var t = e.target;
+    if (!t || !t.hasAttribute('data-rename')) return;
+    var i = int(t.getAttribute('data-rename'), 0);
+    S.game.players[i] = t.value;
+    var g = S.game;
+    if (g.savedId) {
+      var rec = S.past.filter(function (p) { return p.id === g.savedId; })[0];
+      if (rec) { rec.players = names(); savePastLocal(); }
+    }
+    persist();
+  });
+  sheetRoot.addEventListener('keydown', function (e) {
+    var t = e.target;
+    if (e.key === 'Enter' && t && t.hasAttribute('data-rename')) {
+      e.preventDefault();
+      var next = document.getElementById('rename-' + (int(t.getAttribute('data-rename'), 0) + 1));
+      if (next) next.focus(); else t.blur();
+    }
+  });
   app.addEventListener('change', function (e) {
     var t = e.target;
     if (!t || !t.hasAttribute('data-restore') || !t.files || !t.files[0]) return;
@@ -924,7 +948,7 @@ input { font: inherit; }
         savePastLocal();
         var st = data.state;
         var adoptGame = st && st.game && (S.game.phase === 'setup' && S.game.history.length === 0);
-        if (st && st.rules) S.rules = { perTrick: Math.max(0, int(st.rules.perTrick, 1)), bonus: Math.max(0, int(st.rules.bonus, 10)), bowers: !!st.rules.bowers };
+        if (st && st.rules) S.rules = { perTrick: Math.max(0, int(st.rules.perTrick, 1)), bonus: Math.max(0, int(st.rules.bonus, 10)), bowers: true };
         if (adoptGame) { var g = normaliseGame(st.game); if (g) S.game = g; }
         persist();
         S.backupMsg = 'Restored ' + added.length + (added.length === 1 ? ' game' : ' games') + (adoptGame && S.game.phase !== 'setup' ? ' and the game in progress.' : '.');
