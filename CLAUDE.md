@@ -42,9 +42,11 @@ All paths are relative so the site works under `https://mtmcdermott00-cpu.github
 
 ## Design system
 
-Black-tie casino look. Keep it consistent.
+Black-tie casino look, with a day version. Keep both consistent.
 
-- Colours (CSS tokens on `:root`): ink `#0B0A09`, panel `#13110E`, gold `#C9A45C`, bright gold `#E2C27E`, ivory `#F3EBDD`, soft `#CFC6B6`, muted `#A39A8B`, dim `#6E665A`, red suits `#E07A86`, miss `#B9727B`. Single dark theme by design.
+- Two themes from one token set. Night (dark) is the default on bare `:root`: ink `#0B0A09`, panel `#13110E`, gold `#C9A45C`, bright gold `#E2C27E`, ivory text `#F3EBDD`, red suits `#E07A86`, miss `#B9727B`. Day (light) redefines the same tokens under `prefers-color-scheme: light` and `[data-theme="light"]`: ground `#FBF9F4`, ink text `#17130E`, bronze gold `#86672B`, deep gold `#6A4F1A` for emphasis, red suits `#A3243A`.
+- Never write a literal colour in a component rule. Use the tokens; translucent golds use `rgba(var(--gold-rgb), a)`. Text on a gold fill uses `--on-gold`. Card faces in the ranks reference use `--card`, `--card-ink`, `--card-red`, `--card-edge`.
+- Appearance setting on the setup screen: Auto (follows the phone), Day, Night. Stored in `localStorage` as `cw.theme`, applied to `<html data-theme>` by a tiny script in the head so there's no flash, and mirrored into the `theme-color` metas.
 - Type: Bodoni Moda (italic for headlines and big numbers), Jost for body and small tracked uppercase labels. Loaded from Google Fonts with fallbacks.
 - Gold hairlines and a thin gold frame inset around the screen, square 2px buttons with tracked uppercase labels, 44px minimum touch targets.
 - Suit glyphs use U+FE0E so iOS doesn't render them as emoji.
@@ -52,7 +54,7 @@ Black-tie casino look. Keep it consistent.
 
 ## Standalone / iPhone details
 
-- `viewport-fit=cover` and `apple-mobile-web-app-status-bar-style: black-translucent`, so the app runs under the status bar. `body` is padded by `env(safe-area-inset-top/bottom)`, the bottom sheet adds the bottom inset.
+- `viewport-fit=cover` with `apple-mobile-web-app-status-bar-style: default`, so the status bar takes its colour from `theme-color` and its text stays readable in both themes. `body` is padded by `env(safe-area-inset-top/bottom)`, the bottom sheet adds the bottom inset.
 - `html, body` don't scroll; inner `.scroll` regions do. `overscroll-behavior: none` stops rubber-banding the whole app.
 - Inputs are at least 16px so iOS doesn't zoom on focus.
 
@@ -64,7 +66,7 @@ Black-tie casino look. Keep it consistent.
 
 ## Testing
 
-- Syntax-check the script: extract the `<script>` block and run `node --check`.
+- Syntax-check the scripts: extract both `<script>` blocks (the tiny theme one in the head and the app) and run `node --check` on each.
 - Test in Safari on iPhone from the home-screen icon, not just a Safari tab: standalone mode, safe areas and storage behave differently there.
 - Not yet verified on a real device: first launch from the icon, offline load, Back up via the share sheet, Restore from Files.
 
