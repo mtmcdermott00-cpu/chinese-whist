@@ -80,6 +80,9 @@ input { font: inherit; }
 .iconbtn { width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(201,164,92,0.4); background: transparent; color: var(--gold); display: grid; place-items: center; padding: 0; }
 .iconbtn:disabled { opacity: 0.35; }
 .iconbtn svg { width: 18px; height: 18px; }
+.iconlab { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 48px; padding: 0; border: 0; background: transparent; color: var(--gold); }
+.iconlab:disabled { opacity: 0.35; }
+.iconlab .lbl { font-size: 9px; font-weight: 600; letter-spacing: 0.2em; padding-left: 0.2em; text-transform: uppercase; }
 .textbtn { height: 44px; padding: 0 4px; border: 0; background: transparent; color: var(--gold); font-size: 11px; font-weight: 600; letter-spacing: 0.26em; text-transform: uppercase; }
 
 .btn { width: 100%; height: 56px; border-radius: 2px; border: 1px solid var(--gold); background: var(--gold); color: var(--ink); font-size: 13px; font-weight: 600; letter-spacing: 0.3em; text-transform: uppercase; }
@@ -138,7 +141,7 @@ input { font: inherit; }
 .ledger-head { align-items: end; padding: 14px 0 12px; border-bottom: 1px solid var(--line-strong); }
 .ledger-head .corner { font-size: 9px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); line-height: 1.4; }
 .pcol { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
-.pcol .pname { font-size: 10px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--soft); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pcol .pname { border: 0; background: transparent; padding: 4px 0; text-decoration: underline dotted rgba(201,164,92,0.6); text-underline-offset: 4px; font-size: 10px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--soft); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pcol .ptotal { font-family: var(--display); font-weight: 500; font-size: 30px; line-height: 1; }
 .pcol .ptotal.lead { color: var(--gold-hi); }
 .pcol .tag { height: 12px; font-size: 9px; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; color: var(--gold); }
@@ -452,7 +455,7 @@ input { font: inherit; }
     var heads = D.names.map(function (nm, i) {
       var lead = best !== null && D.totals[i] === best;
       return '<div class="pcol">' +
-        '<span class="pname">' + esc(nm) + '</span>' +
+        '<button class="pname" data-action="names" aria-label="Fix names, ' + esc(nm) + '">' + esc(nm) + '</button>' +
         '<span class="ptotal num' + (lead ? ' lead' : '') + '">' + D.totals[i] + '</span>' +
         '<span class="tag">' + (live && i === D.dealer ? 'Deals' : '') + '</span>' +
         '</div>';
@@ -489,7 +492,7 @@ input { font: inherit; }
     var headline = over ? 'Cash out' : cardsWord(D.rd.cards);
     var glyph = over ? '' : '<span class="glyph' + (D.rd.trump === 'NT' ? ' nt' : '') + (SUIT[D.rd.trump].red ? ' red' : '') + '" aria-hidden="true">' + SUIT[D.rd.trump].g + '</span>';
     var hint, label;
-    if (g.phase === 'bid') { hint = esc(D.names[D.dealer]) + ' deals · ' + esc(D.names[D.order[0]]) + ' calls first'; label = 'Place the bids'; }
+    if (g.phase === 'bid') { hint = esc(D.names[D.dealer]) + ' deals · ' + esc(D.names[D.order[0]]) + ' calls first' + (g.history.length ? '' : '<br>Name wrong? Tap it above to fix it.'); label = 'Place the bids'; }
     else if (g.phase === 'tricks') { hint = 'Play the hand, then record the tricks'; label = 'Record tricks'; }
     else { hint = 'Saved to the ledger. Same table, the deal moves one seat.'; label = 'Another round'; }
     var undoDisabled = g.phase === 'bid' && g.history.length === 0;
@@ -500,9 +503,9 @@ input { font: inherit; }
           '<button class="ranks-pill" data-action="ref" data-key="ref" aria-label="Card ranks for this hand">Ranks</button></div>' +
         '<div class="head-title"><h1 class="display" style="margin:0">' + headline + '</h1>' + glyph + '</div></div>' +
         '<div class="icons">' +
-          '<button class="iconbtn" data-action="undo" data-key="undo" aria-label="Undo"' + (undoDisabled ? ' disabled' : '') + '>' + ICON.undo + '</button>' +
-          '<button class="iconbtn" data-action="ledger" data-key="ledger" aria-label="Ledger of past games">' + ICON.ledger + '</button>' +
-          '<button class="iconbtn" data-action="askNew" data-key="askNew" aria-label="New game">' + ICON.plus + '</button>' +
+          iconLab('undo', 'Undo', ICON.undo, undoDisabled) +
+          iconLab('ledger', 'Ledger', ICON.ledger) +
+          iconLab('askNew', 'New', ICON.plus) +
         '</div>' +
       '</div>' +
       banner +
@@ -513,6 +516,11 @@ input { font: inherit; }
       '<div class="foot"><span class="hint">' + hint + '</span>' +
         '<button class="btn" data-action="primary" data-key="primary">' + label + '</button></div>' +
     '</section>';
+  }
+
+  function iconLab(action, label, icon, disabled) {
+    return '<button class="iconlab" data-action="' + action + '" data-key="' + action + '"' + (disabled ? ' disabled' : '') + '>' +
+      '<span class="iconbtn" aria-hidden="true">' + icon + '</span><span class="lbl">' + label + '</span></button>';
   }
 
   function viewHistory() {
@@ -656,6 +664,20 @@ input { font: inherit; }
           '<p class="confirm-copy" style="margin:0">This game isn\'t finished, so it won\'t be filed in the ledger. Starting over discards the hands played so far.</p>' +
           '<div class="row2"><button class="btn ghost" data-action="closeSheet" data-key="keep">Keep playing</button>' +
           '<button class="btn" data-action="discard" data-key="discard">Start over</button></div>' +
+        '</div>';
+    }
+    if (S.sheet === 'names') {
+      var fields = g.players.map(function (p, i) {
+        return '<div class="seat"><span class="idx" aria-hidden="true">' + (i + 1) + '</span>' +
+          '<input id="rename-' + i + '" type="text" data-rename="' + i + '" value="' + esc(p) + '" placeholder="Player ' + (i + 1) + '" aria-label="Player ' + (i + 1) + ' name" autocomplete="off" autocapitalize="words" enterkeyhint="next"></div>';
+      }).join('');
+      return '<div class="veil" data-action="closeSheet"></div>' +
+        '<div class="sheet' + enter + '" role="dialog" aria-modal="true" aria-label="Fix names">' +
+          '<div class="grab"></div>' +
+          '<div class="sheet-head"><div><div class="display">Names</div><div class="kicker">Scores stay as they are</div></div>' +
+            '<button class="iconbtn" data-action="closeSheet" aria-label="Close">' + ICON.close + '</button></div>' +
+          '<div class="seats">' + fields + '</div>' +
+          '<button class="btn" data-action="closeSheet" data-key="namesDone">Done</button>' +
         '</div>';
     }
     var D = derive();
@@ -806,6 +828,7 @@ input { font: inherit; }
       }
     },
     closeSheet: function () { S.sheet = null; render(); },
+    names: function () { S.sheet = 'names'; render(); },
     confirm: function () {
       var g = S.game, D = derive();
       if (S.sheet === 'bid') {
@@ -887,6 +910,26 @@ input { font: inherit; }
     if (t && t.hasAttribute('data-name')) {
       S.game.players[int(t.getAttribute('data-name'), 0)] = t.value;
       persist();
+    }
+  });
+  sheetRoot.addEventListener('input', function (e) {
+    var t = e.target;
+    if (!t || !t.hasAttribute('data-rename')) return;
+    var i = int(t.getAttribute('data-rename'), 0);
+    S.game.players[i] = t.value;
+    var g = S.game;
+    if (g.savedId) {
+      var rec = S.past.filter(function (p) { return p.id === g.savedId; })[0];
+      if (rec) { rec.players = names(); savePastLocal(); }
+    }
+    persist();
+  });
+  sheetRoot.addEventListener('keydown', function (e) {
+    var t = e.target;
+    if (e.key === 'Enter' && t && t.hasAttribute('data-rename')) {
+      e.preventDefault();
+      var next = document.getElementById('rename-' + (int(t.getAttribute('data-rename'), 0) + 1));
+      if (next) next.focus(); else t.blur();
     }
   });
   app.addEventListener('change', function (e) {

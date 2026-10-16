@@ -27,7 +27,7 @@ All paths are relative so the site works under `https://mtmcdermott00-cpu.github
 ## Screens (all in `index.html`, chosen by `S.view`)
 
 - `setup`: masthead ("Chinese" in tracked gold caps over italic "Whist"), seats, the ten-hands grid, house rules (per trick, bonus, and a note that bowers are always in), "Deal me in".
-- `game`: hand kicker with a Ranks pill, headline (e.g. "8 cards" plus suit), undo / ledger / new game icons, the ledger grid (one column per player, one row per hand, running total with bid/won underneath, gold for an exact call, muted rose for a miss), and one gold action button. Bids and tricks are entered in a bottom sheet in bidding order.
+- `game`: hand kicker with a Ranks pill, headline (e.g. "8 cards" plus suit), undo / ledger / new game icons with small labels (Undo, Ledger, New), the ledger grid (one column per player, one row per hand, running total with bid/won underneath, gold for an exact call, muted rose for a miss), and one gold action button. Bids and tricks are entered in a bottom sheet in bidding order. Tapping a player name in the ledger header opens a Names sheet to fix names mid-game without touching scores (also renames the filed record if the game is over).
 - `history` (the Ledger): standings (games, wins, average, % called exactly), list of finished games with remove (two-step confirm), Back up / Restore.
 - `ref` (Card ranks): pick a trump suit or no trumps, see trumps as cards high to low, the plain-suit order, and a follow-suit reminder. Opens on the current hand's trumps.
 
